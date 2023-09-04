@@ -11,6 +11,8 @@
 #include <poplin/codelets.hpp>
 #include <poplin/MatMul.hpp>
 
+#include <iostream>
+
 #define DIM 5
 
 enum Progs {

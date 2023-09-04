@@ -91,11 +91,7 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
 
   for (int i = 0; i < DIM*DIM; i++) {
 
-   // if (dist(gen) > 6) {
-      x[i] = distribution(gen);
-   // } else {
-    //  x[i] = 0.0f;
-   // }
+    x[i] = distribution(gen);
     y[i] = distribution(gen);
     zInit[i] = -1.0f;
     zResult[i] = -1.0f;
@@ -172,20 +168,3 @@ int main(int argc, char **argv) {
 
   return EXIT_SUCCESS;
 }
-  //for (int i = 0; i < zResult.size(); i++) {
-    //std::cout << zResult[i] << std::endl;
-  //}
-
-  // Check both methods give same result:
-  //for (auto i = 0u; i < zResult1.size(); ++i) {
-    //if (zResult1[i] != zResult2[i]) {
-      //throw std::runtime_error("Results do not match");
-    //}
-  //}
-  //std::cerr << "Results match.\n";
-
-  //if (options.profile) {
-    // Retrieve and save profiling information from the engine:
-    //std::ofstream of(options.profileName);
-    //engine.printProfileSummary(of, {{"showExecutionSteps", "true"}});
-  //}

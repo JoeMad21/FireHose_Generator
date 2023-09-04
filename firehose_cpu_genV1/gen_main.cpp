@@ -13,8 +13,6 @@
 
 #include <iostream>
 
-#define DIM 5
-
 enum Progs {
   WRITE_INPUTS,
   REDUCTION_PROG,
@@ -23,14 +21,14 @@ enum Progs {
 };
 
 std::vector<poplar::program::Program>
-buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options) {
+buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsigned int dim) {
   // Use the namespace here to make graph construction code less verbose:
   using namespace poplar;
 
   // Create some tensor variables. In this case they are just vectors:
-  Tensor v1 = g.addVariable(FLOAT, {DIM,DIM}, "v1");
-  Tensor v2 = g.addVariable(FLOAT, {DIM,DIM}, "v2");
-  Tensor v3 = g.addVariable(FLOAT, {DIM,DIM}, "v3");
+  Tensor v1 = g.addVariable(FLOAT, {dim,dim}, "v1");
+  Tensor v2 = g.addVariable(FLOAT, {dim,dim}, "v2");
+  Tensor v3 = g.addVariable(FLOAT, {dim,dim}, "v3");
 
   // Variables need to be explcitly mapped to tiles. Put each variable on
   // a different tile (regardless of whether it is sensible in this case)
@@ -76,7 +74,7 @@ buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options) {
 }
 
 void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
-                         const utils::Options &options) {
+                         const utils::Options &options, long unsigned int dim) {
   poplar::Engine engine(std::move(exe));
   engine.load(device);
 
@@ -86,12 +84,12 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   std::uniform_real_distribution<float> dist(0.0f,8.0f);
 
 
-  std::vector<float> x(DIM*DIM);
-  std::vector<float> y(DIM*DIM);
-  std::vector<float> zInit(DIM*DIM);
-  std::vector<float> zResult(DIM*DIM);
+  std::vector<float> x(dim*dim);
+  std::vector<float> y(dim*dim);
+  std::vector<float> zInit(dim*dim);
+  std::vector<float> zResult(dim*dim);
 
-  for (int i = 0; i < DIM*DIM; i++) {
+  for (int i = 0; i < dim*dim; i++) {
 
     x[i] = distribution(gen);
     y[i] = distribution(gen);
@@ -113,7 +111,7 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   std::cout << "Matrix 1\n";
   for (int i = 0; i < x.size(); i++) {
     std::cout << std::fixed << x[i] << "\t";
-    if ((i+1)%DIM == 0 && i != 0) {
+    if ((i+1)%dim == 0 && i != 0) {
       std::cout << "\n";
     }
   }
@@ -123,7 +121,7 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   std::cout << "Matrix 2\n";
   for (int i = 0; i < y.size(); i++) {
     std::cout << std::fixed << y[i] << "\t";
-    if ((i+1)%DIM == 0 && i != 0) {
+    if ((i+1)%dim == 0 && i != 0) {
       std::cout << "\n";
     }
   }
@@ -133,7 +131,7 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   std::cout << "Output Matrix\n";
   for (int i = 0; i < zResult.size(); i++) {
     std::cout << std::fixed << zResult[i] << "\t";
-    if ((i+1)%DIM == 0 && i != 0) {
+    if ((i+1)%dim == 0 && i != 0) {
       std::cout << "\n";
     }
   }
@@ -183,6 +181,11 @@ int main(int argc, char **argv) {
       std::cout << "Matrix multiplication selected" << std::endl;
   }
 
+  long unsigned int matrix_dim = 0;
+  std::cout << "What dimensions would you like for your square matrix? (NxN)" << std::endl;
+  std::cout << "Enter N: ";
+  std::cin >> matrix_dim;
+
   try {
     auto options = utils::parseOptions(argc, argv);
     auto device = utils::getDeviceFromOptions(options);
@@ -193,7 +196,7 @@ int main(int argc, char **argv) {
     // for large programs):
     std::vector<poplar::program::Program> progs;
     if (!options.loadExe) {
-      progs = buildGraphAndPrograms(graph, options);
+      progs = buildGraphAndPrograms(graph, options, matrix_dim);
     }
 
     auto exe = utils::compileOrLoadExe(graph, progs, options);
@@ -203,7 +206,7 @@ int main(int argc, char **argv) {
       exe.serialize(outf);
     }
 
-    executeGraphProgram(device, exe, options);
+    executeGraphProgram(device, exe, options, matrix_dim);
 
   } catch (const std::exception &e) {
     std::cerr << "Exception: " << e.what() << "\n";

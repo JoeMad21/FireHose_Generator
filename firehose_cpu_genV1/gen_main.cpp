@@ -153,6 +153,10 @@ int main(int argc, char **argv) {
       std::cout << "No device selected, ending program" << std::endl;
       return 0;
       break;
+    case 0:
+      std::cout << "No device selected, ending program" << std::endl;
+      return 0;
+      break;
     default:
       std::cout << "IPU selected" << std::endl;
   }

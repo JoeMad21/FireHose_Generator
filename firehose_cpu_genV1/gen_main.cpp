@@ -141,6 +141,23 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
 }
 
 int main(int argc, char **argv) {
+
+  int device = -1; // 0 = IPU
+  std::cout << "Welcome to the FireHose Generator. What device are you targeting today?" << std::endl;
+  std::cout << "1. Graphcore IPU" << std::endl;
+  std::cout << "2. UPMEM DPU" << std::endl;
+  cin >> device;
+
+  switch(device) {
+    case -1:
+      std::cout << "No device selected, ending program" << std::endl;
+      return 0;
+      break;
+    default:
+      std::cout << "IPU selected" << std::endl;
+  }
+
+
   try {
     auto options = utils::parseOptions(argc, argv);
     auto device = utils::getDeviceFromOptions(options);

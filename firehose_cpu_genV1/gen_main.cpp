@@ -146,6 +146,7 @@ int main(int argc, char **argv) {
   std::cout << "Welcome to the FireHose Generator. What device are you targeting today?" << std::endl;
   std::cout << "1. Graphcore IPU" << std::endl;
   std::cout << "2. UPMEM DPU" << std::endl;
+  std::cout << "Selected Device: ";
   std::cin >> device;
 
   switch(device) {
@@ -161,6 +162,26 @@ int main(int argc, char **argv) {
       std::cout << "IPU selected" << std::endl;
   }
 
+  int consumption_task = -1;
+  std::cout << "What consumption task would you like to do on the back-end?" << std::endl;
+  std::cout << "1. Matrix multiplication" << std::endl;
+  std::cout << "2. Graph task" << std::endl;
+  std::cout << "3. Hashing" << std::endl;
+  std::cout << "Consumption Task: ";
+  std::cin >> consumption_task;
+
+  switch(consumption_task) {
+    case -1:
+      std::cout << "No consumption task selected, ending program" << std::endl;
+      return 0;
+      break;
+    case 0:
+      std::cout << "No consumption task selected, ending program" << std::endl;
+      return 0;
+      break;
+    default:
+      std::cout << "Matrix multiplication selected" << std::endl;
+  }
 
   try {
     auto options = utils::parseOptions(argc, argv);

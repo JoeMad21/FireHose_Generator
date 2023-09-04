@@ -79,31 +79,31 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   std::uniform_real_distribution<float> dist(0.0f,8.0f);
 
 
-  std::vector<float> x(dim*dim);
-  std::vector<float> y(dim*dim);
-  std::vector<float> zInit(dim*dim);
-  std::vector<float> zResult(dim*dim);
+  std::vector<float> in_strm(dim*dim);
+  std::vector<float> proc_mem(dim*dim);
+  std::vector<float> out_strm_init(dim*dim);
+  std::vector<float> out_strm_result(dim*dim);
 
   for (int i = 0; i < dim*dim; i++) {
 
-    x[i] = distribution(gen);
-    y[i] = distribution(gen);
-    zInit[i] = -1.0f;
-    zResult[i] = -1.0f;
+    in_strm[i] = distribution(gen);
+    proc_mem[i] = distribution(gen);
+    out_strm_init[i] = -1.0f;
+    out_stream_result[i] = -1.0f;
   }
 
-  engine.connectStream("write_x", x.data());
-  engine.connectStream("write_y", y.data());
-  engine.connectStream("write_z", zInit.data());
+  engine.connectStream("write_x", in_strm.data());
+  engine.connectStream("write_y", proc_mem.data());
+  engine.connectStream("write_z", out_strm_init.data());
+  engine.connectStream("read_z", out_strm_result.data());
 
 
   // Run program using PopLibs reduction:
-  engine.connectStream("read_z", zResult.data());
   engine.run(WRITE_INPUTS);
   engine.run(CONSUMPTION_TASK);
   engine.run(READ_RESULTS);
 
-  std::cout << "Matrix 1\n";
+  std::cout << "Input Matrix\n";
   for (int i = 0; i < x.size(); i++) {
     std::cout << std::fixed << x[i] << "\t";
     if ((i+1)%dim == 0 && i != 0) {
@@ -113,7 +113,7 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   
   std::cout << "\n";
  
-  std::cout << "Matrix 2\n";
+  std::cout << "In-Memory Matrix\n";
   for (int i = 0; i < y.size(); i++) {
     std::cout << std::fixed << y[i] << "\t";
     if ((i+1)%dim == 0 && i != 0) {

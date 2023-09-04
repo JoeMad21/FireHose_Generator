@@ -44,7 +44,6 @@ buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsi
   // Program that executes all the reduction compute sets:
   auto seq = program::Sequence();
   //seq.add(program::Execute(cs1));
-  progs[CONSUMPTION_TASK] = seq;
 
   // Create streams that allow reading and writing of the variables:
   auto stream1 = g.addHostToDeviceFIFO("write_x", FLOAT, in_strm.numElements());
@@ -56,6 +55,8 @@ buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsi
   poplin::addCodelets(g);
   auto mult_out = poplin::matMul(g, in_strm, proc_mem, seq, FLOAT);
   seq.add(program::Copy(mult_out,out_strm));
+
+  progs[CONSUMPTION_TASK] = seq;
 
   // Add program which initialises the inputs. Poplar is able to merge these
   // copies for efficiency:
@@ -89,7 +90,7 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
     in_strm[i] = distribution(gen);
     proc_mem[i] = distribution(gen);
     out_strm_init[i] = -1.0f;
-    out_stream_result[i] = -1.0f;
+    out_strm_result[i] = -1.0f;
   }
 
   engine.connectStream("write_x", in_strm.data());
@@ -104,8 +105,8 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   engine.run(READ_RESULTS);
 
   std::cout << "Input Matrix\n";
-  for (int i = 0; i < x.size(); i++) {
-    std::cout << std::fixed << x[i] << "\t";
+  for (int i = 0; i < in_strm.size(); i++) {
+    std::cout << std::fixed << in_strm[i] << "\t";
     if ((i+1)%dim == 0 && i != 0) {
       std::cout << "\n";
     }
@@ -114,8 +115,8 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   std::cout << "\n";
  
   std::cout << "In-Memory Matrix\n";
-  for (int i = 0; i < y.size(); i++) {
-    std::cout << std::fixed << y[i] << "\t";
+  for (int i = 0; i < proc_mem.size(); i++) {
+    std::cout << std::fixed << proc_mem[i] << "\t";
     if ((i+1)%dim == 0 && i != 0) {
       std::cout << "\n";
     }
@@ -124,8 +125,8 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
   std::cout << "\n";
   
   std::cout << "Output Matrix\n";
-  for (int i = 0; i < zResult.size(); i++) {
-    std::cout << std::fixed << zResult[i] << "\t";
+  for (int i = 0; i < out_strm_result.size(); i++) {
+    std::cout << std::fixed << out_strm_result[i] << "\t";
     if ((i+1)%dim == 0 && i != 0) {
       std::cout << "\n";
     }

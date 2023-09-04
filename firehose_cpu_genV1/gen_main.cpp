@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
   std::cout << "Welcome to the FireHose Generator. What device are you targeting today?" << std::endl;
   std::cout << "1. Graphcore IPU" << std::endl;
   std::cout << "2. UPMEM DPU" << std::endl;
-  cin >> device;
+  std::cin >> device;
 
   switch(device) {
     case -1:

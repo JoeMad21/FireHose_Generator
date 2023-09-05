@@ -177,6 +177,28 @@ int main(int argc, char **argv) {
       std::cout << "Matrix multiplication selected" << std::endl;
   }
 
+  if (consumption_task) {
+    int source = -1;
+    std::cout << "Where should we source the data?" << std::endl;
+    std::cout << "1. Random Generation" << std::endl;
+    std::cout << "2. From file" << std::endl;
+    std::cout << "Choice of Source: ";
+    std::cin >> source;
+
+    switch(source) {
+      case -1:
+        std::cout << "No source selected, ending program" << std::endl;
+        return 0;
+        break;
+      case 0:
+        std::cout << "No source selected, ending program" << std::endl;
+        return 0;
+        break;
+      default:
+        std::cout << "Random Generation selected" << std::endl;
+    }
+  }
+
   long unsigned int matrix_dim = 0;
   std::cout << "What dimensions would you like for your square matrix? (NxN)" << std::endl;
   std::cout << "Enter N: ";

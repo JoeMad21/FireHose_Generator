@@ -1,15 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-
-#include <cstdlib>
 #include <iostream>
 #include "ipu_gen.hpp"
-
-enum Progs {
-  WRITE_INPUTS,
-  CONSUMPTION_TASK,
-  READ_RESULTS,
-  NUM_PROGRAMS
-};
 
 int main(int argc, char **argv) {
 

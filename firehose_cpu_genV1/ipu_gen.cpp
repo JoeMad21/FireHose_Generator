@@ -7,8 +7,7 @@ enum Progs {
   NUM_PROGRAMS
 };
 
-std::vector<poplar::program::Program>
-buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsigned int dim) {
+std::vector<poplar::program::Program> buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsigned int dim) {
   // Use the namespace here to make graph construction code less verbose:
   using namespace poplar;
 
@@ -56,8 +55,7 @@ buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsi
   return progs;
 }
 
-void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
-                         const utils::Options &options, long unsigned int dim) {
+void executeGraphProgram(poplar::Device &device, poplar::Executable &exe, const utils::Options &options, long unsigned int dim) {
   poplar::Engine engine(std::move(exe));
   engine.load(device);
 
@@ -123,8 +121,8 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe,
 
 void launchOnIPU(long unsigned int matrix_dim, int argc, char **argv) {
     try {
-        auto options = utils::parseOptions(argc, argv);
-        auto device = utils::getDeviceFromOptions(options);
+         auto options = utils::parseOptions(argc, argv);
+         auto device = utils::getDeviceFromOptions(options);
         poplar::Graph graph(device.getTarget());
 
         // If we are loading the graph program we do not need
@@ -145,7 +143,7 @@ void launchOnIPU(long unsigned int matrix_dim, int argc, char **argv) {
         executeGraphProgram(device, exe, options, matrix_dim);
 
     } catch (const std::exception &e) {
-        std::cerr << "Exception: " << e.what() << "\n";
-        //return EXIT_FAILURE;
+         std::cerr << "Exception: " << e.what() << "\n";
+         //return EXIT_FAILURE;
     }
 }

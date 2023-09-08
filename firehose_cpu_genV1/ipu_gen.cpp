@@ -7,7 +7,125 @@ enum Progs {
   NUM_PROGRAMS
 };
 
-std::vector<poplar::program::Program> buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsigned int dim) {
+struct graphSpecs {
+  int num_tensors;
+  int num_ipus;
+  int num_streams;
+
+  std::vector<int> assigned_ipu;
+
+  std::vector<poplar::Tensor> tensors;
+  std::vector<tuple <unsigned int, unsigned int>> dimensions;
+  std::vector<poplar::type> tensor_types;
+  std::vector<std::string> tensor_dbs;
+
+  std::vector<poplar::DataStream> streams;
+  std::vector<std::string> strm_srcs;
+  std::vector<std::string> strm_dests;
+  std::vector<std::string> stream_dbs;
+  std::vector<poplar::type> stream_types;
+  std::vector<int> stream_lengths;
+  std::vector<bool> stream_dirs; // 0 = CPU to IPU, 1 = IPU to CPU
+  //std::vector<poplar::DataStreamType> stream_types;
+  
+  //std::vector<> mapping;
+}
+
+void printMatrix(std::string matrix_name, std::vector<float> matrix, int matrix_dim) {
+  std::cout << matrix_name << std::endl;
+
+  for (int i = 0; i < matrix.size(); i++) {
+
+    std::cout << std::fixed << matrix[i] << "\t";
+    
+    if ( (i+1)%matrix_dim == 0 && i != 0) {
+      std::endl;
+    }
+
+  }
+}
+
+void buildGraph(poplar::Graph &g, const utils::Options &options, graphSpecs &specs) {
+
+  for (int i = 0; i < specs.num_tensors; i++) {
+    specs.tensors.push_back( g.addVariable( specs.type[i], {get<0>(specs.dimensions[i]), get<1>(specs.dimensions[i])}, specs.debug_contexts[i]) )
+    poplar::poputil::mapTensorLinearly(g, specs.tensors[i]);
+  }
+
+}
+
+void buildStreams(poplar::Graph &g, const utils::Options &options, graphSpecs &specs) {
+  for (int i = 0; i < specs.num_streams; i++) {
+    if(specs.stream_dirs[i]) {
+      g.addHostToDeviceFIFO(specs.stream_dbs[i], specs.stream_types[i], specs.stream_lengths[i])
+    }
+    else {
+      g.addDeviceToHostFIFO(specs.stream_dbs[i], specs.stream_types[i], specs.stream_lengths[i])
+    }
+  }
+}
+
+std::vector<poplar::program::Program> buildPrograms(poplar::Graph &g, const utils::Options &options, graphSpecs &specs) {
+  
+  // Now can start constructing the programs. Construct a vector of
+  // separate programs that can be called individually:
+  std::vector<program::Program> progs(Progs::NUM_PROGRAMS);
+
+  // Program that executes all the reduction compute sets:
+  auto seq = program::Sequence();
+
+  // Add a second compute set that will perform the same calculation using
+  poplin::addCodelets(g);
+  auto mult_out = poplin::matMul(g, specs.tensor[0], specs.tensor[1], seq, FLOAT);
+  seq.add(program::Copy(mult_out,specs.tensor[2]));
+
+  progs[CONSUMPTION_TASK] = seq;
+
+  // Add program which initialises the inputs. Poplar is able to merge these
+  // copies for efficiency:
+  progs[WRITE_INPUTS] =
+      program::Sequence({program::Copy(specs.streams[0], specs.tensors[0]), program::Copy(specs.streams[1], specs.tensors[1])});
+
+  // Add a program to read back the result:
+  progs[READ_RESULTS] = program::Copy(specs.tensors[2], specs.streams[2]);
+
+  return progs;
+
+}
+
+void executeCPUCode(int matrix_dimensions) {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> distribution(0.0f, 100.0f);
+
+  std::vector<float> multiplicand(dim*dim);
+  std::vector<float> multiplier(dim*dim);
+  std::vector<float> output_init(dim*dim);
+  std::vector<float> output_result(dim*dim);
+
+  for (int i = 0; i < dim*dim; i++) {
+    multiplicand[i] = distribution(gen);
+    multiplier[i] = distribution(gen);
+    output_init[i] = -1.0f;
+    output_result[i] = -1.0f;
+  }
+}
+
+void executeIPUCode() {
+  poplar::Engine engine(std::move(exe));
+  engine.load(device);
+
+  engine.connectStream("write_x", in_strm.data());
+  engine.connectStream("write_y", proc_mem.data());
+  engine.connectStream("write_z", out_strm_init.data());
+  engine.connectStream("read_z", out_strm_result.data());
+
+  engine.run(WRITE_INPUTS);
+  engine.run(CONSUMPTION_TASK);
+  engine.run(READ_RESULTS);
+}
+
+/* std::vector<poplar::program::Program> buildGraphAndPrograms(poplar::Graph &g, const utils::Options &options, long unsigned int dim) {
   // Use the namespace here to make graph construction code less verbose:
   using namespace poplar;
 
@@ -117,7 +235,7 @@ void executeGraphProgram(poplar::Device &device, poplar::Executable &exe, const 
     }
   }
 
-}
+} */
 
 void launchOnIPU(long unsigned int matrix_dim, int argc, char **argv) {
     try {

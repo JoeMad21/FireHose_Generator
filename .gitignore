@@ -1,9 +1,0 @@
-firehose_cpu_genV1.zip
-firehose_cpu_genV1/gen_demo
-firehose_cpu_genV1/gen.log
-.vscode/settings.json
-firehose_cpu_genV1/report/archive.a
-firehose_cpu_genV1/report/profile.pop
-firehose_cpu_genV1/pv_report/pv_report.pvti
-firehose_cpu_genV1/report/debug.cbor
-firehose_cpu_genV1/gen_demo_IPU

@@ -7,6 +7,53 @@ enum Progs {
   NUM_PROGRAMS
 };
 
+
+struct graph_tensors {
+  int num_tensors;
+
+  std::vector<poplar::Tensor> tensors;
+  std::vector<tuple <unsigned int, unsigned int>> dimensions;
+  std::vector<poplar::type> tensor_types;
+  std::vector<std::string> tensor_dbs;
+}
+
+class GraphTensors {
+  
+  private:
+    graph_tensors gTensors;
+  
+  public:
+    GraphTensors () {
+      this->gTensors.num_tensors =;
+    }
+}
+
+class GraphStreams {
+
+  private:
+    int num_streams;
+
+    std::vector<poplar::DataStream> streams;
+    std::vector<std::string> strm_srcs;
+    std::vector<std::string> strm_dests;
+    std::vector<std::string> stream_dbs;
+    std::vector<poplar::type> stream_types;
+    std::vector<int> stream_lengths;
+    std::vector<bool> stream_dirs; // 0 = CPU to IPU, 1 = IPU to CPU
+
+  public:
+    GraphStreams() {
+      this->num_streams;
+
+      this->streams;
+      this->strm_srcs;
+      this->strm_dests;
+      this->stream_dbs;
+      this->stream_types;
+      this->stream_lengths;
+      this->stream_dirs;
+    }
+}
 /*
 struct graphSpecs {
   int num_tensors;
@@ -31,7 +78,8 @@ struct graphSpecs {
   
   //std::vector<> mapping;
 }
-
+*/
+/*
 void printMatrix(std::string matrix_name, std::vector<float> matrix, int matrix_dim) {
   std::cout << matrix_name << std::endl;
 

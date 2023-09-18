@@ -24,6 +24,8 @@ int main(int argc, char **argv) {
       std::cout << "IPU selected" << std::endl;
   }
 
+  std::cout << std::endl;
+
   int consumption_task = -1;
   std::cout << "What consumption task would you like to do on the back-end?" << std::endl;
   std::cout << "1. Matrix multiplication" << std::endl;
@@ -44,6 +46,8 @@ int main(int argc, char **argv) {
     default:
       std::cout << "Matrix multiplication selected" << std::endl;
   }
+  
+  std::cout << std::endl;
 
   if (consumption_task) {
     int source = -1;
@@ -67,11 +71,18 @@ int main(int argc, char **argv) {
     }
   }
 
+  std::cout << std::endl;
+
   long unsigned int matrix_dim = 0;
   std::cout << "What dimensions would you like for your square matrix? (NxN)" << std::endl;
   std::cout << "Enter N: ";
   std::cin >> matrix_dim;
+  std::cout << std::endl;
 
   launchOnIPU(matrix_dim, argc, argv);
+  
+  //uint32_t test_seeds[4] = { 3755779729, 545041952, 2371063071, 3195806153}; //Random test values for demo
+  //launchOnIPU_IPU_IPU(matrix_dim, argc, argv, test_seeds);
+
   return EXIT_SUCCESS;
 }

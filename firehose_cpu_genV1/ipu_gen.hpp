@@ -7,6 +7,9 @@
 #include "utils.h"
 //#include <iostream>
 #include <unistd.h>
+#include <tuple>
+
+//#include <poplar/type.hpp>
 
 #include <poputil/TileMapping.hpp>
 

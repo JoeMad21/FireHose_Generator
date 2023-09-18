@@ -13,8 +13,8 @@ class GraphTensors {
         int num_tensors;
 
         std::vector<poplar::Tensor> tensors;
-        std::vector<tuple <unsigned int, unsigned int>> dimensions;
-        std::vector<poplar::type> tensor_types;
+        std::vector< std::tuple<unsigned int, unsigned int> > dimensions;
+        std::vector<poplar::Type> tensor_types;
         std::vector<std::string> tensor_dbs;
   
     public:
@@ -29,23 +29,23 @@ class GraphTensors {
 
             for (int i = 0; i < num_tensors; i++) {
                 this->dimensions.push_back(std::tuple<int,int>{5,5});
-                this->tensor_types.push_back(poplar::type FLOAT);
+                this->tensor_types.push_back(poplar::FLOAT);
         
                 this->tensors.push_back( g.addVariable( 
                     this->tensor_types[i],
-                    {get<0>(this->dimensions[i]), get<1>(this->dimensions[i])},
-                    specs.debug_contexts[i] ) );
-                poplar::poputil::mapTensorLinearly(g, tensors[i]);
+                    {std::get<0>(this->dimensions[i]), std::get<1>(this->dimensions[i])},
+                    this->tensor_dbs[i] ) );
+                poputil::mapTensorLinearly(g, tensors[i]);
             }
         }
 
-        void addTensor (poplar::Graph &g, std::string tensor_db, poplar::type tensor_type, int dim1, int dim2) {
+        void addTensor (poplar::Graph &g, std::string tensor_db, poplar::Type tensor_type, long unsigned int dim1, long unsigned int dim2) {
             this->num_tensors++;
 
-            this->tensor_dbs.push_back(db_con);
+            this->tensor_dbs.push_back(tensor_db);
 
             this->tensors.push_back( g.addVariable( 
-                    this->tensor_type,
+                    tensor_type,
                     {dim1, dim2},
                     tensor_db ) );
         }
@@ -53,7 +53,7 @@ class GraphTensors {
         poplar::Tensor getTensor(int index) {
             return this->tensors[index];
         }
-}
+};
 
 class GraphStreams {
 
@@ -64,7 +64,7 @@ class GraphStreams {
     std::vector<std::string> strm_srcs;
     std::vector<std::string> strm_dests;
     std::vector<std::string> strm_dbs;
-    std::vector<poplar::type> strm_types;
+    std::vector<poplar::Type> strm_types;
     std::vector<int> strm_lengths;
     std::vector<bool> strm_dirs; // 0 = CPU to IPU, 1 = IPU to CPU
 
@@ -72,33 +72,41 @@ class GraphStreams {
     GraphStreams(poplar::Graph &g) {
       this->num_streams = 3;
       
-      this->strm_dbs.push_back("Source Stream")
+      this->strm_dbs.push_back("Source_Stream");
       this->strm_srcs.push_back("CPU");
       this->strm_dests.push_back("IPU");
       this->strm_lengths.push_back(25);
-      this->strm_types.push_back(poplar::type FLOAT);
+      this->strm_types.push_back(poplar::FLOAT);
       this->strm_dirs.push_back(0);
       this->strms.push_back( g.addHostToDeviceFIFO(strm_dbs[0], strm_types[0], strm_lengths[0]) );
 
       //Note that this stream should belong to the back-end
-      this->strm_dbs.push_back("Consumption Stream")
+      this->strm_dbs.push_back("Consumption_Stream");
       this->strm_srcs.push_back("CPU");
       this->strm_srcs.push_back("IPU");
       this->strm_lengths.push_back(25);
-      this->strm_types.push_back(poplar::type FLOAT);
+      this->strm_types.push_back(poplar::FLOAT);
       this->strm_dirs.push_back(0);
       this->strms.push_back( g.addHostToDeviceFIFO(strm_dbs[1], strm_types[1], strm_lengths[1]) );
 
-      this->strm_dbs.push_back("Result Stream")
-      this->strm_srcs.push_back("IPU");
-      this->strm_dests.push_back("CPU")
+      this->strm_dbs.push_back("Write_Result_Stream");
+      this->strm_srcs.push_back("CPU");
+      this->strm_dests.push_back("IPU");
       this->strm_lengths.push_back(25);
-      this->strm_types.push_back(poplar::type FLOAT);
+      this->strm_types.push_back(poplar::FLOAT);
+      this->strm_dirs.push_back(0);
+      this->strms.push_back( g.addHostToDeviceFIFO(strm_dbs[2], strm_types[2], strm_lengths[2]) );
+
+      this->strm_dbs.push_back("Read_Result_Stream");
+      this->strm_srcs.push_back("IPU");
+      this->strm_dests.push_back("CPU");
+      this->strm_lengths.push_back(25);
+      this->strm_types.push_back(poplar::FLOAT);
       this->strm_dirs.push_back(1);
-      this->strms.push_back( g.addDeviceToHostFIFO(strm_dbs[2], strm_types[2], strm_lengths[2]) );
+      this->strms.push_back( g.addDeviceToHostFIFO(strm_dbs[3], strm_types[3], strm_lengths[3]) );
     }
 
-    void addHostToDeviceStream(poplar::Graph &g, std::string strm_db, int strm_length, poplar::type strm_type ) {
+    void addHostToDeviceStream(poplar::Graph &g, std::string strm_db, int strm_length, poplar::Type strm_type ) {
         this->num_streams++;
 
         this->strm_srcs.push_back("CPU");
@@ -106,10 +114,10 @@ class GraphStreams {
         this->strm_lengths.push_back(strm_length);
         this->strm_types.push_back(strm_type);
         this->strm_dirs.push_back(0);
-        this->strms.push_back( g.addDeviceToHostFIFO(strm_db, strm_type, strm_length) );
+        this->strms.push_back( g.addHostToDeviceFIFO(strm_db, strm_type, strm_length) );
     }
 
-    void addHostToDeviceStream(poplar::Graph &g, std::string strm_db, int strm_length, poplar::type strm_type ) {
+    void addDeviceToHostStrean(poplar::Graph &g, std::string strm_db, int strm_length, poplar::Type strm_type ) {
         this->num_streams++;
 
         this->strm_srcs.push_back("IPU");
@@ -117,14 +125,14 @@ class GraphStreams {
         this->strm_lengths.push_back(strm_length);
         this->strm_types.push_back(strm_type);
         this->strm_dirs.push_back(1);
-        this->strms.push_back( g.addHostToDeviceFIFO(strm_db, strm_type, strm_length) );
+        this->strms.push_back( g.addDeviceToHostFIFO(strm_db, strm_type, strm_length) );
     }
 
     poplar::DataStream getStream(int index) {
         return this->strms[index];
     }
 
-}
+};
 
 void printMatrix(std::string matrix_name, std::vector<float> matrix, int matrix_dim) {
   std::cout << matrix_name << std::endl;
@@ -134,41 +142,44 @@ void printMatrix(std::string matrix_name, std::vector<float> matrix, int matrix_
     std::cout << std::fixed << matrix[i] << "\t";
     
     if ( (i+1)%matrix_dim == 0 && i != 0) {
-      std::endl;
+      std::cout << std::endl;
     }
 
   }
+
+  std::cout << std::endl;
+
 }
 
 std::vector<poplar::program::Program> buildPrograms(poplar::Graph &g, const utils::Options &options, GraphTensors &gTensors, GraphStreams &gStreams) {
   
   // Now can start constructing the programs. Construct a vector of
   // separate programs that can be called individually:
-  std::vector<program::Program> progs(Progs::NUM_PROGRAMS);
+  std::vector<poplar::program::Program> progs(Progs::NUM_PROGRAMS);
 
   // Program that executes all the reduction compute sets:
-  auto seq = program::Sequence();
+  auto seq = poplar::program::Sequence();
 
   // Add a second compute set that will perform the same calculation using
   poplin::addCodelets(g);
-  auto mult_out = poplin::matMul(g, gTensors.getTensor(0), gTensors.getTensor(1), seq, FLOAT);
-  seq.add(program::Copy(mult_out,gTensors.getTensor(2)));
+  auto mult_out = poplin::matMul(g, gTensors.getTensor(0), gTensors.getTensor(1), seq, poplar::FLOAT);
+  seq.add(poplar::program::Copy(mult_out,gTensors.getTensor(2)));
 
   progs[CONSUMPTION_TASK] = seq;
 
   // Add program which initialises the inputs. Poplar is able to merge these
   // copies for efficiency:
   progs[WRITE_INPUTS] =
-      program::Sequence({program::Copy(gStreams.getStreams(0), gTensors.getTensor(0)), program::Copy(gStreams.getStreams(1), gTensors.getTensor(1))});
+      poplar::program::Sequence({poplar::program::Copy(gStreams.getStream(0), gTensors.getTensor(0)), poplar::program::Copy(gStreams.getStream(1), gTensors.getTensor(1))});
 
   // Add a program to read back the result:
-  progs[READ_RESULTS] = program::Copy(gTensors.getTensor(2), gStreams.getStream(2));
+  progs[READ_RESULTS] = poplar::program::Copy(gTensors.getTensor(2), gStreams.getStream(3));
 
   return progs;
 
 }
-
-void executeCPUCode(int dim) {
+/*
+executeCPUCode(int dim) {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> distribution(0.0f, 100.0f);
@@ -185,27 +196,28 @@ void executeCPUCode(int dim) {
     output_result[i] = -1.0f;
   }
 
-  printMatrix("Multiplicand", multiplicand, multiplicand.size())
-  printMatrix("Multiplier", multiplier, multiplier.size())
+  printMatrix("Multiplicand", multiplicand, multiplicand.size());
+  printMatrix("Multiplier", multiplier, multiplier.size());
   //printMatrix("Result", output_result, output_result.size())
 
 }
+*/
 
-void executeIPUCode() {
+void executeIPUCode(poplar::Device &device, poplar::Executable &exe, std::vector<float> &multiplicand, std::vector<float> &multiplier, std::vector<float> &output_init, std::vector<float> &output_result) {
   poplar::Engine engine(std::move(exe));
   engine.load(device);
 
-  engine.connectStream("write_source", in_strm.data());
-  engine.connectStream("write_consumption", proc_mem.data());
-  engine.connectStream("write_init_result", out_strm_init.data());
-  engine.connectStream("read_result", out_strm_result.data()); 
+  engine.connectStream("Source_Stream", multiplicand.data());
+  engine.connectStream("Consumption_Stream", multiplier.data());
+  engine.connectStream("Write_Result_Stream", output_init.data());
+  engine.connectStream("Read_Result_Stream", output_result.data()); 
 
   engine.run(WRITE_INPUTS);
   engine.run(CONSUMPTION_TASK);
   engine.run(READ_RESULTS);
 }
 
-void launchOnIPU(long unsigned int matrix_dim, int argc, char **argv) {
+void launchOnIPU(long unsigned int dim, int argc, char **argv) {
     try {
          auto options = utils::parseOptions(argc, argv);
          auto device = utils::getDeviceFromOptions(options);
@@ -216,7 +228,9 @@ void launchOnIPU(long unsigned int matrix_dim, int argc, char **argv) {
         // for large programs):
         std::vector<poplar::program::Program> progs;
         if (!options.loadExe) {
-            progs = buildGraphAndPrograms(graph, options, matrix_dim);
+            GraphTensors gTensors(graph);
+            GraphStreams gStreams(graph);
+            progs = buildPrograms(graph, options, gTensors, gStreams);//buildGraphAndPrograms(graph, options, matrix_dim);
         }
 
         auto exe = utils::compileOrLoadExe(graph, progs, options);
@@ -226,7 +240,31 @@ void launchOnIPU(long unsigned int matrix_dim, int argc, char **argv) {
         exe.serialize(outf);
         }
 
-        executeGraphProgram(device, exe, options, matrix_dim);
+        //executeGraphProgram(device, exe, options, matrix_dim);
+        //executeCPUCode(matrix_dim);
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> distribution(0.0f, 100.0f);
+
+        std::vector<float> multiplicand(dim*dim);
+        std::vector<float> multiplier(dim*dim);
+        std::vector<float> output_init(dim*dim);
+        std::vector<float> output_result(dim*dim);
+
+        for (int i = 0; i < dim*dim; i++) {
+            multiplicand[i] = distribution(gen);
+            multiplier[i] = distribution(gen);
+            output_init[i] = -1.0f;
+            output_result[i] = -1.0f;
+        }
+
+        printMatrix("Multiplicand", multiplicand, 5);
+        printMatrix("Multiplier", multiplier, 5);
+
+        executeIPUCode(device, exe, multiplicand, multiplier, output_init, output_result);
+
+        printMatrix("Result", output_result, 5);
 
     } catch (const std::exception &e) {
          std::cerr << "Exception: " << e.what() << "\n";

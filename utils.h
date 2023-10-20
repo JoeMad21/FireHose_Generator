@@ -15,6 +15,10 @@
 namespace utils {
 
   struct Options {
+  std::size_t devices;
+  std::size_t con_task;
+  std::size_t source;
+  std::size_t dimensions;
   std::size_t numIpus;
   std::string exeName;
   std::string profileName;

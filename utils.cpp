@@ -3,14 +3,22 @@
 #include "utils.h"
 
 using namespace utils;
-
+// gen.batch --devices help --con_task 1
 Options utils::parseOptions(int argc, char **argv) {
   Options options;
   std::string modeString;
 
   namespace po = boost::program_options;
   po::options_description desc("Options");
-  desc.add_options()("help", "Show command help.")(
+  desc.add_options()("help", "Show command help.")( 
+      "device", po::value(&options.devices)->default_value(1),
+      "Select hardware to use")( 
+      "con_task", po::value(&options.con_task)->default_value(1),
+      "Select Consumption task to use")( 
+      "source", po::value(&options.source)->default_value(1),
+      "Select source")( 
+      "dimension", po::value(&options.dimensions)->default_value(5),
+      "Select matrix dimensions")(
       "model", po::bool_switch(&options.useIpuModel)->default_value(false),
       "If set then use IPU model instead of hardware.")(
       "ipus", po::value<std::size_t>(&options.numIpus)->default_value(1),

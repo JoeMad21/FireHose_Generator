@@ -28,7 +28,7 @@ int main() {
     std::cout << "What dimensions would you like for your square matrix? (NxN)" << std::endl;
     std::cin >> matrix_dim;
 
-    std::ofstream myFile("job_script.sh");
+    std::ofstream myFile("gen.batch");
 
     std::string input = "#!/bin/bash\n#SBATCH --job-name FireHose_Generator\n#SBATCH --ipus=1\n--partition=p64\n#SBATCH --nodelist=gc-poplar-03\n#SBATCH --ntasks 1\n#SBATCH --time=00:05:00\n\nsrun ./gen_demo --device " + std::to_string(device) + " --con_task " + std::to_string(consumption_task) + " --source " + std::to_string(source) + " --dimension " + std::to_string(matrix_dim);
 
@@ -36,7 +36,7 @@ int main() {
 
     myFile.close();
 
-    system("./job_script.sh");
+    system("sbatch gen.batch");
     
     return 0;
 }

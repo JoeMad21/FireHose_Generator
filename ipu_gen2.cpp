@@ -18,7 +18,7 @@ class GraphTensors {
         std::vector<std::string> tensor_dbs;
   
     public:
-        GraphTensors (poplar::Graph &g) {
+        GraphTensors (poplar::Graph &g, int matrix_dim) {
     
             this->num_tensors = 3;
 
@@ -28,7 +28,7 @@ class GraphTensors {
             this->tensor_dbs.push_back("Output Matrix (Result)");
 
             for (int i = 0; i < num_tensors; i++) {
-                this->dimensions.push_back(std::tuple<int,int>{5,5});
+                this->dimensions.push_back(std::tuple<int,int>{matrix_dim,matrix_dim});
                 this->tensor_types.push_back(poplar::FLOAT);
         
                 this->tensors.push_back( g.addVariable( 
@@ -69,13 +69,13 @@ class GraphStreams {
     std::vector<bool> strm_dirs; // 0 = CPU to IPU, 1 = IPU to CPU
 
   public:
-    GraphStreams(poplar::Graph &g) {
+    GraphStreams(poplar::Graph &g, int matrix_dim) {
       this->num_streams = 3;
       
       this->strm_dbs.push_back("Source_Stream");
       this->strm_srcs.push_back("CPU");
       this->strm_dests.push_back("IPU");
-      this->strm_lengths.push_back(25);
+      this->strm_lengths.push_back(matrix_dim*matrix_dim);
       this->strm_types.push_back(poplar::FLOAT);
       this->strm_dirs.push_back(0);
       this->strms.push_back( g.addHostToDeviceFIFO(strm_dbs[0], strm_types[0], strm_lengths[0]) );
@@ -84,7 +84,7 @@ class GraphStreams {
       this->strm_dbs.push_back("Consumption_Stream");
       this->strm_srcs.push_back("CPU");
       this->strm_srcs.push_back("IPU");
-      this->strm_lengths.push_back(25);
+      this->strm_lengths.push_back(matrix_dim*matrix_dim);
       this->strm_types.push_back(poplar::FLOAT);
       this->strm_dirs.push_back(0);
       this->strms.push_back( g.addHostToDeviceFIFO(strm_dbs[1], strm_types[1], strm_lengths[1]) );
@@ -92,7 +92,7 @@ class GraphStreams {
       this->strm_dbs.push_back("Write_Result_Stream");
       this->strm_srcs.push_back("CPU");
       this->strm_dests.push_back("IPU");
-      this->strm_lengths.push_back(25);
+      this->strm_lengths.push_back(matrix_dim*matrix_dim);
       this->strm_types.push_back(poplar::FLOAT);
       this->strm_dirs.push_back(0);
       this->strms.push_back( g.addHostToDeviceFIFO(strm_dbs[2], strm_types[2], strm_lengths[2]) );
@@ -100,7 +100,7 @@ class GraphStreams {
       this->strm_dbs.push_back("Read_Result_Stream");
       this->strm_srcs.push_back("IPU");
       this->strm_dests.push_back("CPU");
-      this->strm_lengths.push_back(25);
+      this->strm_lengths.push_back(matrix_dim*matrix_dim);
       this->strm_types.push_back(poplar::FLOAT);
       this->strm_dirs.push_back(1);
       this->strms.push_back( g.addDeviceToHostFIFO(strm_dbs[3], strm_types[3], strm_lengths[3]) );
@@ -141,7 +141,7 @@ void printMatrix(std::string matrix_name, std::vector<float> matrix, int matrix_
 
     std::cout << std::fixed << matrix[i] << "\t";
     
-    if ( (i+1)%matrix_dim == 0 && i != 0) {
+    if ( (i+1)%matrix_dim == 0) {
       std::cout << std::endl;
     }
 
@@ -228,8 +228,8 @@ void launchOnIPU(long unsigned int dim, int argc, char **argv) {
         // for large programs):
         std::vector<poplar::program::Program> progs;
         if (!options.loadExe) {
-            GraphTensors gTensors(graph);
-            GraphStreams gStreams(graph);
+            GraphTensors gTensors(graph, dim);
+            GraphStreams gStreams(graph, dim);
             progs = buildPrograms(graph, options, gTensors, gStreams);//buildGraphAndPrograms(graph, options, matrix_dim);
         }
 
@@ -259,12 +259,12 @@ void launchOnIPU(long unsigned int dim, int argc, char **argv) {
             output_result[i] = -1.0f;
         }
 
-        printMatrix("Multiplicand", multiplicand, 5);
-        printMatrix("Multiplier", multiplier, 5);
+        printMatrix("Multiplicand", multiplicand, dim);
+        printMatrix("Multiplier", multiplier, dim);
 
         executeIPUCode(device, exe, multiplicand, multiplier, output_init, output_result);
 
-        printMatrix("Result", output_result, 5);
+        printMatrix("Result", output_result, dim);
 
     } catch (const std::exception &e) {
          std::cerr << "Exception: " << e.what() << "\n";
